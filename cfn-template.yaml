@@ -5,41 +5,71 @@ Description: |
   on AWS Elastic Compute Cloud (EC2) Instance using AWS Cloudformation and CLI Services.
 
 Parameters:
-  imageID:
+  LatestAmiId:
     Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
     Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64"
 
-  keyPair:
+  instanceType:
+    Description: Choose your instance type
+    Type: String
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t2.large
+
+  KeyName:
     Description: Choose your keypair
     Type: AWS::EC2::KeyPair::KeyName
     Default: firstkey
 
 Resources:
-  myWebServer:
+  WebServerHost:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Ref imageID
-      InstanceType: t2.micro
-      KeyName: !Ref keyPair
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref instanceType
+      KeyName: !Ref KeyName
       SecurityGroupIds:
-        - !Ref mySecGrp # !GetAtt mySecGrp.GroupId
+        - !Ref webServerSecurityGroup
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}
+          Value: !Sub Web Server of ${AWS::StackName} Stack
       UserData: !Base64 |
+        #! /bin/bash
+        dnf update -y
+        dnf install python3 -y
+        dnf install python3-pip -y
+        pip3 install flask
+        dnf install git -y
+        FOLDER="https://raw.githubusercontent.com/AbdullahBozduman/Roman_Numerals_Converter/master/templates"
+        cd /home/ec2-user
+        wget -P templates ${FOLDER}/index.html
+        wget -P templates ${FOLDER}/result.html
+        wget https://raw.githubusercontent.com/AbdullahBozduman/Roman_Numerals_Converter/master/roman-numerals-converter-app.py
+        python3 roman-numerals-converter-app.py
 
-  mySecGrp:
+  webServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ssh and http # Required
-      GroupName: numerals-converter-scgrp
+      GroupDescription: Enable HTTP for Flask Web Server and SSH port to secure reach to my EC2
+      GroupName: clark-roman-number-converter
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp #required
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  WebsiteURL:
+    Value: !Sub
+      - http://${PIA}
+      - PIA: !GetAtt WebServerHost.PublicDnsName
+    Description: Roman Numerals Converter Application URL

@@ -1,12 +1,12 @@
 #! /bin/bash
 dnf update -y
-dnf install python3
-pip install flask
-FOLDER="https://raw.githubusercontent.com/AbdullahBozduman/Project_101/master/static-web"
-wget ${FOLDER}/index.html
-wget ${FOLDER}/cat0.jpg
-wget ${FOLDER}/cat1.jpg
-wget ${FOLDER}/cat2.jpg
-wget ${FOLDER}/cat3.png
-cd /path/to/destination
+dnf install python3 -y
+dnf install python3-pip -y
+pip3 install flask
+dnf install git -y
+FOLDER="https://raw.githubusercontent.com/AbdullahBozduman/Roman_Numerals_Converter/master/templates"
+cd /home/ec2-user
+wget -P templates ${FOLDER}/index.html
+wget -P templates ${FOLDER}/result.html
+wget https://raw.githubusercontent.com/AbdullahBozduman/Roman_Numerals_Converter/master/roman-numerals-converter-app.py
 python3 roman-numerals-converter-app.py
